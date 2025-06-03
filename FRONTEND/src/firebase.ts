@@ -2,14 +2,14 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, getIdToken } from 'firebase/auth';
 
-// Função para obter configuração de forma mais segura
+// Configuração do Firebase - estas variáveis podem ser públicas
+// O Firebase API Key pode ser exposto, pois a segurança real vem das regras do Firestore
 function getFirebaseConfig() {
-  // Using the injected environment variables from vite.config.ts
   const config = {
-    apiKey: __FIREBASE_CONFIG__.apiKey,
-    authDomain: __FIREBASE_CONFIG__.authDomain,
-    projectId: __FIREBASE_CONFIG__.projectId,
-    appId: __FIREBASE_CONFIG__.appId,
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
   };
 
   // Validação básica para garantir que as variáveis estão definidas
