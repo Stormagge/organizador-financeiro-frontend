@@ -31,7 +31,7 @@ export const googleProvider = new GoogleAuthProvider();
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const user = auth.currentUser;
   const token = user ? await getIdToken(user) : null;
-  return fetch(import.meta.env.VITE_API_URL + path, {
+  return fetch(import.meta.env.API_URL + path, {
     ...options,
     headers: {
       ...(options.headers || {}),
