@@ -1,0 +1,11 @@
+{
+  "name": "organizador-financeiro-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "cd FRONTEND && npm install && npm run build",
+    "install-frontend": "cd FRONTEND && npm install"
+  },
+  "workspaces": [
+    "FRONTEND"
+  ]
+}

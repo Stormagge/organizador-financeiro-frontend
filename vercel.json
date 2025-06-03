@@ -1,10 +1,22 @@
 {
+  "version": 2,
   "name": "organizador-financeiro-frontend",
-  "buildCommand": "cd FRONTEND && npm run build",
-  "outputDirectory": "FRONTEND/dist",
-  "installCommand": "cd FRONTEND && npm ci",
-  "framework": "vite",
-  "env": {
-    "NODE_VERSION": "18"
-  }
+  "builds": [
+    {
+      "src": "FRONTEND/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
