@@ -1,0 +1,6 @@
+{
+  "outputDirectory": "FRONTEND/dist",
+  "buildCommand": "cd FRONTEND && npm install && npm run build",
+  "installCommand": "cd FRONTEND && npm install",
+  "rootDirectory": "FRONTEND"
+}
