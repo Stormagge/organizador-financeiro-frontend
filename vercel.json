@@ -1,6 +1,5 @@
 {
-  "outputDirectory": "FRONTEND/dist",
   "buildCommand": "cd FRONTEND && npm install && npm run build",
-  "installCommand": "cd FRONTEND && npm install",
-  "framework": "vite"
+  "outputDirectory": "FRONTEND/dist",
+  "installCommand": "cd FRONTEND && npm install"
 }
