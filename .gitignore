@@ -7,7 +7,16 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Environment files
+.env
+.env.local
+.env.*.local
+FRONTEND/.env
+BACKEND/.env
+BACKEND/firebase-service-account.json
 dist
 dist-ssr
 *.local
