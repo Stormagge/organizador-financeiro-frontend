@@ -4,11 +4,12 @@ import { getAuth, GoogleAuthProvider, getIdToken } from 'firebase/auth';
 
 // Função para obter configuração de forma mais segura
 function getFirebaseConfig() {
+  // Using the injected environment variables from vite.config.ts
   const config = {
-    apiKey: import.meta.env.FIREBASE_API_KEY,
-    authDomain: import.meta.env.FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.FIREBASE_PROJECT_ID,
-    appId: import.meta.env.FIREBASE_APP_ID,
+    apiKey: __FIREBASE_CONFIG__.apiKey,
+    authDomain: __FIREBASE_CONFIG__.authDomain,
+    projectId: __FIREBASE_CONFIG__.projectId,
+    appId: __FIREBASE_CONFIG__.appId,
   };
 
   // Validação básica para garantir que as variáveis estão definidas
@@ -31,7 +32,7 @@ export const googleProvider = new GoogleAuthProvider();
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const user = auth.currentUser;
   const token = user ? await getIdToken(user) : null;
-  return fetch(import.meta.env.API_URL + path, {
+  return fetch(import.meta.env.VITE_API_URL + path, {
     ...options,
     headers: {
       ...(options.headers || {}),
