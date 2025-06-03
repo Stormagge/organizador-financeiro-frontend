@@ -1,4 +1,3 @@
-// filepath: c:\Users\Jesse\Desktop\ORGANIZADOR FINANCEIRo\FRONTEND\src\App-new.tsx
 import { useState, useEffect } from 'react'
 import './App.css'
 import { BudgetAdjust } from './BudgetAdjust'

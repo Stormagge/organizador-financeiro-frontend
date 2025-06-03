@@ -197,3 +197,4 @@ label[style*="background"]:has(input[type="file"]:disabled) {
   max-width: 80px;
   overflow-wrap: break-word;
 }
+

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "cd FRONTEND && npm run dev",
     "build": "cd FRONTEND && npm run build",
-    "preview": "cd FRONTEND && npm run preview"
+    "preview": "cd FRONTEND && npm run preview",
+    "vercel-build": "npm run build --prefix FRONTEND"
   },
   "engines": {
     "node": ">=18"
