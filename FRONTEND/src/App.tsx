@@ -255,27 +255,51 @@ function App() {
 
   // Carrega perfis
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setProfiles([]); // Limpa perfis se o usuário fizer logout
+      setCurrentProfile(''); // Limpa o perfil atual
+      return;
+    }
     
     const loadProfiles = async () => {
       try {
-        const res = await apiFetch('/api/profiles')
-        const data = await res.json()
-        const profileNames = data.map((p: any) => p.name)
-        setProfiles(profileNames)
-        if (profileNames.length > 0 && !profileNames.includes(currentProfile)) {
-          setCurrentProfile(profileNames[0])
+        console.log('App.tsx: Tentando carregar perfis...'); // Log de diagnóstico
+        const res = await apiFetch('/api/profiles');
+        if (!res.ok) { // Verifica se a resposta da API foi bem-sucedida
+          throw new Error(`Falha ao buscar perfis: ${res.status} ${res.statusText}`);
+        }
+        const data = await res.json();
+        const profileNames = data.map((p: any) => p.name);
+        setProfiles(profileNames); // Atualiza a lista de perfis
+
+        if (profileNames.length > 0) {
+          // Se currentProfile não estiver na lista ou estiver vazio, define para o primeiro disponível.
+          if (!profileNames.includes(currentProfile) || currentProfile === '') {
+            console.log('App.tsx: Definindo perfil atual para o primeiro da lista:', profileNames[0]); // Log de diagnóstico
+            setCurrentProfile(profileNames[0]);
+          } else {
+            console.log('App.tsx: Perfil atual é válido e está na lista:', currentProfile); // Log de diagnóstico
+          }
+        } else {
+          // Nenhum perfil existe para o usuário.
+          console.log('App.tsx: Nenhum perfil encontrado. Definindo para padrão "Perfil Padrão".'); // Log de diagnóstico
+          // Define um perfil padrão para acionar o onboarding para ele.
+          setProfiles(['Perfil Padrão']); 
+          setCurrentProfile('Perfil Padrão');
         }
       } catch (err) {
-        console.error('Erro ao carregar perfis:', err)
-        if (profiles.length === 0) {
-          setProfiles(['Perfil Padrão'])
-          setCurrentProfile('Perfil Padrão')
+        console.error('App.tsx: Erro ao carregar perfis:', err);
+        // Fallback: se a chamada à API falhar e nenhum perfil estiver carregado, define um padrão.
+        // Isso garante que, se o primeiro carregamento falhar, o aplicativo não fique preso.
+        if (profiles.length === 0 && currentProfile === '') {
+          console.log('App.tsx: Erro ao carregar perfis. Definindo para padrão "Perfil Padrão".'); // Log de diagnóstico
+          setProfiles(['Perfil Padrão']);
+          setCurrentProfile('Perfil Padrão');
         }
       }
-    }
-    loadProfiles()
-  }, [user, currentProfile, profiles.length])
+    };
+    loadProfiles();
+  }, [user]); // Executa apenas quando o usuário muda.
 
   // Carrega dados do perfil atual
   useEffect(() => {
