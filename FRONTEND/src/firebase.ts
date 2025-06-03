@@ -30,14 +30,33 @@ export const googleProvider = new GoogleAuthProvider();
 
 // Utilitário para requisições autenticadas ao backend
 export async function apiFetch(path: string, options: RequestInit = {}) {
-  const user = auth.currentUser;
-  const token = user ? await getIdToken(user) : null;
-  return fetch(import.meta.env.VITE_API_URL + path, {
-    ...options,
-    headers: {
-      ...(options.headers || {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      'Content-Type': 'application/json',
-    },
-  });
+  try {
+    const user = auth.currentUser;
+    const token = user ? await getIdToken(user) : null;
+    
+    if (!import.meta.env.VITE_API_URL) {
+      console.error('API URL não está definida. Verifique se VITE_API_URL existe no ambiente.');
+      throw new Error('Configuração da API ausente');
+    }
+    
+    // Adiciona timeout para evitar espera infinita
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 10000);
+    
+    const response = await fetch(import.meta.env.VITE_API_URL + path, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal
+    });
+    
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    console.error(`Erro na chamada API para ${path}:`, error);
+    throw error;
+  }
 }
