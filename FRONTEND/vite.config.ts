@@ -8,10 +8,10 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       __FIREBASE_CONFIG__: {
-        apiKey: env.VITE_FIREBASE_API_KEY,
-        authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
-        projectId: env.VITE_FIREBASE_PROJECT_ID,
-        appId: env.VITE_FIREBASE_APP_ID,
+        apiKey: env.FIREBASE_API_KEY,
+        authDomain: env.FIREBASE_AUTH_DOMAIN,
+        projectId: env.FIREBASE_PROJECT_ID,
+        appId: env.FIREBASE_APP_ID,
       }
     }
   }
