@@ -7,7 +7,8 @@ import { ExpenseForm, type Expense } from './ExpenseForm'
 import { PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts'
 import { exportExpensesToCSV } from './exportCSV'
 import { AuthForm } from './AuthForm'
-import { apiFetch } from './firebase'
+import { apiFetch, auth } from './firebase' // Corrigido o import do auth
+import type { User as FirebaseUser } from 'firebase/auth' // Tipo para o usuário do Firebase
 
 // Onboarding Component
 function Onboarding({ onFinish, profileName }: { onFinish: (income: number) => void, profileName: string }) {
@@ -249,8 +250,16 @@ function App() {
 
   // Auth state
   useEffect(() => {
-    // Simulação de verificação de autenticação
-    setTimeout(() => setUser({ email: 'usuario@exemplo.com' }), 1000);
+    const unsubscribe = auth.onAuthStateChanged((firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        console.log("App.tsx: Usuário Firebase autenticado:", firebaseUser.email);
+        setUser(firebaseUser);
+      } else {
+        console.log("App.tsx: Nenhum usuário Firebase autenticado.");
+        setUser(null);
+      }
+    });
+    return () => unsubscribe(); // Limpa o listener ao desmontar
   }, []);
 
   // Carrega perfis
