@@ -1,9 +1,21 @@
 {
-  "buildCommand": "node build.js",
-  "outputDirectory": "FRONTEND/dist",
-  "installCommand": "npm install",
-  "github": {
-    "enabled": true,
-    "silent": true
-  }
+  "version": 2,
+  "builds": [
+    {
+      "src": "FRONTEND/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
