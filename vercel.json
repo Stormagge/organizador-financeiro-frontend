@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node setup.js && cd FRONTEND && npm install && npm run build",
+  "buildCommand": "node build.js",
   "outputDirectory": "FRONTEND/dist",
   "installCommand": "npm install",
   "github": {

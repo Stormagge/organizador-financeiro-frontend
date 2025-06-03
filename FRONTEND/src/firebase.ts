@@ -2,6 +2,12 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, getIdToken } from 'firebase/auth';
 import { offlineAPI } from './offlineAPI';
+import type { OfflineExpense } from './offlineAPI';
+
+// Tipos para os requests
+type ExpenseBody = Partial<Omit<OfflineExpense, 'id' | 'profileId'>>;
+type ProfileBody = { name?: string; income?: number };
+type RequestBody = { [key: string]: any };
 
 // Estado global para controle de modo offline
 export const useOfflineMode = {
@@ -109,15 +115,17 @@ async function handleOfflineRequest(path: string, options: RequestInit = {}) {
   
   // Simular um pequeno delay para parecer mais natural
   await new Promise(resolve => setTimeout(resolve, 200));
-  
-  // Extrair o método e o body
+    // Extrair o método e o body com tipagem
   const method = options.method || 'GET';
-  let body = {};
+  let body: RequestBody = {};
+  
   if (options.body) {
     try {
-      body = JSON.parse(options.body.toString());
+      const parsed = JSON.parse(options.body.toString());
+      body = parsed as RequestBody;
     } catch (e) {
       console.error('Erro ao parsear body:', e);
+      body = {} as RequestBody;
     }
   }
   
@@ -128,12 +136,15 @@ async function handleOfflineRequest(path: string, options: RequestInit = {}) {
     if (path.startsWith('/api/profiles')) {
       // Profiles endpoints
       if (method === 'GET') {
-        responseData = await offlineAPI.getProfiles();
-      } else if (method === 'POST') {
-        responseData = await offlineAPI.createProfile(body.name);
+        responseData = await offlineAPI.getProfiles();      } else if (method === 'POST') {
+        const profileBody = body as ProfileBody;
+        if (!profileBody.name) throw new Error('Nome do perfil é obrigatório');
+        responseData = await offlineAPI.createProfile(profileBody.name);
       } else if (path.includes('/income') && method === 'PUT') {
         const profileId = path.split('/')[3];
-        responseData = await offlineAPI.updateProfileIncome(profileId, body.income);
+        const profileBody = body as ProfileBody;
+        if (typeof profileBody.income !== 'number') throw new Error('Income deve ser um número');
+        responseData = await offlineAPI.updateProfileIncome(profileId, profileBody.income);
       }
     } 
     else if (path.startsWith('/api/budgets/')) {
@@ -148,14 +159,25 @@ async function handleOfflineRequest(path: string, options: RequestInit = {}) {
       if (path.includes('/api/expenses/') && (method === 'GET')) {
         const profileId = path.split('/')[3];
         responseData = await offlineAPI.getExpenses(profileId);
-      } 
-      else if (path.includes('/api/expenses/') && method === 'POST') {
+      }      else if (path.includes('/api/expenses/') && method === 'POST') {
         const profileId = path.split('/')[3];
-        responseData = await offlineAPI.addExpense(profileId, body);
-      } 
-      else if (path.includes('/api/expenses/') && method === 'PUT') {
+        const expenseBody = body as ExpenseBody;
+        if (!expenseBody.value || !expenseBody.date || !expenseBody.description || !expenseBody.category) {
+          throw new Error('Campos obrigatórios da despesa ausentes');
+        }
+        // Ensure all required fields are present for a new expense
+        const newExpense: Omit<OfflineExpense, 'id' | 'profileId'> = {
+          value: expenseBody.value,
+          date: expenseBody.date,
+          description: expenseBody.description,
+          category: expenseBody.category,
+          recurring: expenseBody.recurring || false
+        };
+        responseData = await offlineAPI.addExpense(profileId, newExpense);
+      }      else if (path.includes('/api/expenses/') && method === 'PUT') {
         const expenseId = path.split('/')[3];
-        responseData = await offlineAPI.updateExpense(expenseId, body);
+        const expenseUpdate = body as ExpenseBody;
+        responseData = await offlineAPI.updateExpense(expenseId, expenseUpdate);
       } 
       else if (path.includes('/api/expenses/') && method === 'DELETE') {
         const expenseId = path.split('/')[3];
@@ -170,14 +192,14 @@ async function handleOfflineRequest(path: string, options: RequestInit = {}) {
       status: 200,
       json: async () => responseData,
       text: async () => JSON.stringify(responseData)
-    } as Response;
-  } catch (error) {
+    } as Response;  } catch (error: unknown) {
     console.error(`[Modo Offline] Erro ao processar requisição para ${path}:`, error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     return {
       ok: false,
       status: 500,
-      json: async () => ({ error: error.message }),
-      text: async () => JSON.stringify({ error: error.message })
+      json: async () => ({ error: errorMessage }),
+      text: async () => JSON.stringify({ error: errorMessage })
     } as Response;
   }
 }

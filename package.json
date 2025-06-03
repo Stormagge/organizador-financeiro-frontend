@@ -1,11 +1,17 @@
 {
   "name": "organizador-financeiro-monorepo",
   "private": true,
+  "version": "1.0.0",
   "scripts": {
-    "build": "cd FRONTEND && npm install && npm run build",
+    "build": "node build.js",
+    "start": "cd FRONTEND && npm run preview",
+    "dev": "cd FRONTEND && npm run dev",
     "install-frontend": "cd FRONTEND && npm install"
   },
-  "workspaces": [
-    "FRONTEND"
-  ]
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "fs-extra": "^11.2.0"
+  }
 }
