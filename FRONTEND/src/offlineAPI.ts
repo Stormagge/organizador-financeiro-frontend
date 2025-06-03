@@ -1,5 +1,5 @@
 // Modo Offline para testes sem API
-import { User } from "firebase/auth";
+import type { User } from "firebase/auth";
 
 export interface OfflineProfile {
   id: string;
