@@ -1,6 +1,28 @@
 // src/firebase.ts
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, getIdToken } from 'firebase/auth';
+import { offlineAPI } from './offlineAPI';
+
+// Estado global para controle de modo offline
+export const useOfflineMode = {
+  isEnabled: false,
+  setEnabled(value: boolean) {
+    this.isEnabled = value;
+    localStorage.setItem('useOfflineMode', value ? 'true' : 'false');
+    console.log(`Modo offline ${value ? 'ativado' : 'desativado'}`);
+  },
+  init() {
+    // Verificar se estava usando modo offline antes
+    const saved = localStorage.getItem('useOfflineMode');
+    if (saved === 'true') {
+      this.isEnabled = true;
+      console.log('Modo offline ativado (restaurado)');
+    }
+  }
+};
+
+// Inicializar modo offline
+useOfflineMode.init();
 
 // Configuração do Firebase - estas variáveis podem ser públicas
 // O Firebase API Key pode ser exposto, pois a segurança real vem das regras do Firestore
@@ -15,7 +37,7 @@ function getFirebaseConfig() {
   // Validação básica para garantir que as variáveis estão definidas
   Object.entries(config).forEach(([key, value]) => {
     if (!value) {
-      throw new Error(`Firebase configuration error: ${key} is not defined`);
+      console.warn(`Firebase configuration error: ${key} is not defined`);
     }
   });
 
@@ -30,6 +52,11 @@ export const googleProvider = new GoogleAuthProvider();
 
 // Utilitário para requisições autenticadas ao backend
 export async function apiFetch(path: string, options: RequestInit = {}) {
+  // Se estiver em modo offline, use a API offline
+  if (useOfflineMode.isEnabled) {
+    return await handleOfflineRequest(path, options);
+  }
+  
   try {
     const user = auth.currentUser;
     const token = user ? await getIdToken(user) : null;
@@ -57,6 +84,100 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     return response;
   } catch (error) {
     console.error(`Erro na chamada API para ${path}:`, error);
+    
+    // Se a API real falhar, sugerir modo offline
+    if (!useOfflineMode.isEnabled) {
+      console.log('API real falhou, sugerindo modo offline');
+      
+      // Ativar automaticamente o modo offline apenas em produção
+      if (import.meta.env.PROD) {
+        useOfflineMode.setEnabled(true);
+        return handleOfflineRequest(path, options);
+      }
+    }
+    
     throw error;
+  }
+}
+
+// Função para lidar com requisições em modo offline
+async function handleOfflineRequest(path: string, options: RequestInit = {}) {
+  console.log(`[Modo Offline] Requisição para ${path}`, options);
+  
+  // Atualizar o usuário na API offline
+  offlineAPI.setUser(auth.currentUser);
+  
+  // Simular um pequeno delay para parecer mais natural
+  await new Promise(resolve => setTimeout(resolve, 200));
+  
+  // Extrair o método e o body
+  const method = options.method || 'GET';
+  let body = {};
+  if (options.body) {
+    try {
+      body = JSON.parse(options.body.toString());
+    } catch (e) {
+      console.error('Erro ao parsear body:', e);
+    }
+  }
+  
+  // Simular respostas com base no path e método
+  try {
+    let responseData: any;
+    
+    if (path.startsWith('/api/profiles')) {
+      // Profiles endpoints
+      if (method === 'GET') {
+        responseData = await offlineAPI.getProfiles();
+      } else if (method === 'POST') {
+        responseData = await offlineAPI.createProfile(body.name);
+      } else if (path.includes('/income') && method === 'PUT') {
+        const profileId = path.split('/')[3];
+        responseData = await offlineAPI.updateProfileIncome(profileId, body.income);
+      }
+    } 
+    else if (path.startsWith('/api/budgets/')) {
+      // Budgets endpoints
+      const profileId = path.split('/')[3];
+      if (method === 'GET') {
+        responseData = await offlineAPI.getBudgets(profileId);
+      }
+    } 
+    else if (path.startsWith('/api/expenses')) {
+      // Expenses endpoints
+      if (path.includes('/api/expenses/') && (method === 'GET')) {
+        const profileId = path.split('/')[3];
+        responseData = await offlineAPI.getExpenses(profileId);
+      } 
+      else if (path.includes('/api/expenses/') && method === 'POST') {
+        const profileId = path.split('/')[3];
+        responseData = await offlineAPI.addExpense(profileId, body);
+      } 
+      else if (path.includes('/api/expenses/') && method === 'PUT') {
+        const expenseId = path.split('/')[3];
+        responseData = await offlineAPI.updateExpense(expenseId, body);
+      } 
+      else if (path.includes('/api/expenses/') && method === 'DELETE') {
+        const expenseId = path.split('/')[3];
+        await offlineAPI.deleteExpense(expenseId);
+        responseData = { success: true };
+      }
+    }
+    
+    // Simular uma resposta HTTP
+    return {
+      ok: true,
+      status: 200,
+      json: async () => responseData,
+      text: async () => JSON.stringify(responseData)
+    } as Response;
+  } catch (error) {
+    console.error(`[Modo Offline] Erro ao processar requisição para ${path}:`, error);
+    return {
+      ok: false,
+      status: 500,
+      json: async () => ({ error: error.message }),
+      text: async () => JSON.stringify({ error: error.message })
+    } as Response;
   }
 }

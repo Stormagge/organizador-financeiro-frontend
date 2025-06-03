@@ -6,7 +6,39 @@ import { ExpenseForm, type Expense } from './ExpenseForm'
 import { PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts'
 import { exportExpensesToCSV } from './exportCSV'
 import { AuthForm } from './AuthForm'
-import { apiFetch } from './firebase'
+import { apiFetch, useOfflineMode } from './firebase'
+import { ApiErrorFallback } from './ApiErrorFallback'
+
+// Componente para indicar modo offline
+function OfflineIndicator({ onToggle }: { onToggle: () => void }) {
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: '10px',
+      right: '10px',
+      backgroundColor: '#ffeb3b',
+      color: '#333',
+      padding: '8px 12px',
+      borderRadius: '4px',
+      fontSize: '12px',
+      boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+      zIndex: 1000,
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px'
+    }} onClick={onToggle}>
+      <span style={{ 
+        width: '10px', 
+        height: '10px', 
+        backgroundColor: '#ff9800',
+        borderRadius: '50%',
+        display: 'inline-block'
+      }}></span>
+      Modo Offline Ativado
+    </div>
+  );
+}
 
 // Onboarding Component
 function Onboarding({ onFinish, profileName }: { onFinish: (income: number) => void, profileName: string }) {
@@ -373,9 +405,63 @@ function App() {
     editingCategories: boolean
   }>>({})
 
-  // Estados globais de loading e erro para feedback visual
+  // Estados para feedback visual
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Estado para gerenciar problemas de API
+  const [apiError, setApiError] = useState<boolean>(false);
+  const [isOffline, setIsOffline] = useState<boolean>(useOfflineMode.isEnabled);
+  
+  // Efeito para monitorar o modo offline
+  useEffect(() => {
+    setIsOffline(useOfflineMode.isEnabled);
+    
+    // Verificar se API está disponível ao iniciar
+    if (!isOffline) {
+      checkApiAvailability();
+    }
+  }, []);
+  
+  // Função para verificar disponibilidade da API
+  const checkApiAvailability = async () => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${apiUrl}/api/profiles`, {
+        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (res.ok) {
+        setApiError(false);
+      } else {
+        setApiError(true);
+        console.warn('API respondeu com erro:', res.status);
+      }
+    } catch (err) {
+      setApiError(true);
+      console.error('API indisponível:', err);
+    }
+  };
+  
+  // Toggle modo offline
+  const toggleOfflineMode = () => {
+    const newValue = !isOffline;
+    useOfflineMode.setEnabled(newValue);
+    setIsOffline(newValue);
+    
+    if (!newValue) {
+      // Se desativou o modo offline, verifica API
+      checkApiAvailability();
+    } else {
+      setApiError(false); // Reseta erro quando ativa offline
+    }
+  };
 
   // Busca perfis do backend ao autenticar
   useEffect(() => {
@@ -663,14 +749,14 @@ function App() {
         }));
       } else {
         // Cria perfil padrão se não existir nenhum
-        const res = await apiFetch('/api/profiles', {
+        await apiFetch('/api/profiles', {
           method: 'POST',
           body: JSON.stringify({ name: 'Pessoal' })
         });
-        const newProfile = await res.json();
+        
         setProfiles(['Pessoal']);
         const defaultProfile = 'Pessoal';
-      setCurrentProfile(defaultProfile);
+        setCurrentProfile(defaultProfile);
         setProfileData({
           [defaultProfile]: {
             income: null,
@@ -685,6 +771,12 @@ function App() {
       }
     } catch (err) {
       console.error('Erro ao carregar perfis:', err);
+      
+      // Se falhou, ativa modo offline automaticamente
+      if (!isOffline) {
+        toggleOfflineMode();
+      }
+      
       setProfiles(['Pessoal']);
       setCurrentProfile('Pessoal');
       setProfileData({
@@ -703,6 +795,19 @@ function App() {
 
   if (!user) {
     return <AuthForm onAuth={handleAuth} />;
+  }
+
+  // Adiciona exibição de erro de API
+  if (apiError && !isOffline) {
+    return (
+      <ApiErrorFallback 
+        message="Não foi possível conectar ao servidor. Deseja usar o modo offline?"
+        retry={() => {
+          toggleOfflineMode();
+          checkApiAvailability();
+        }}
+      />
+    );
   }
 
   const data = profileData[currentProfile]
@@ -811,6 +916,9 @@ function App() {
         onRemoveExpense={handleRemoveExpense}
         onEditExpense={handleEditExpense}
       />
+      
+      {/* Indicador de modo offline */}
+      {isOffline && <OfflineIndicator onToggle={toggleOfflineMode} />}
     </>
   )
 }
