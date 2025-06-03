@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Diagnóstico</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f8ff;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .success {
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #ffeeee;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border: 1px solid red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏦 Organizador Financeiro - Teste de Diagnóstico</h1>
+        
+        <div class="success">
+            <h3>✅ HTML Básico Funcionando</h3>
+            <p>Se você pode ver esta página, o servidor web básico está funcionando.</p>
+            <p><strong>Data/Hora:</strong> <span id="datetime"></span></p>
+        </div>
+
+        <div id="react-test">
+            <h3>🔄 Testando React...</h3>
+            <p>Tentando carregar React...</p>
+        </div>
+
+        <div class="error">
+            <h3>🚨 Problemas Conhecidos</h3>
+            <ul>
+                <li>Verifique se as variáveis de ambiente estão corretas</li>
+                <li>Verifique se não há erros no console do navegador (F12)</li>
+                <li>Verifique se todos os módulos estão instalados corretamente</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Atualizar data/hora
+        document.getElementById('datetime').textContent = new Date().toLocaleString();
+        
+        // Tentar detectar problemas comuns
+        console.log('Página HTML básica carregada');
+        console.log('User Agent:', navigator.userAgent);
+        console.log('URL:', window.location.href);
+        
+        // Verificar se há erros de JavaScript
+        window.addEventListener('error', function(e) {
+            console.error('Erro JavaScript detectado:', e.error);
+            const reactTest = document.getElementById('react-test');
+            reactTest.innerHTML = `
+                <h3>❌ Erro JavaScript Detectado</h3>
+                <p><strong>Erro:</strong> ${e.message}</p>
+                <p><strong>Arquivo:</strong> ${e.filename}:${e.lineno}</p>
+            `;
+        });
+    </script>
+</body>
+</html>

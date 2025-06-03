@@ -33,4 +33,19 @@ try {
   );
 } catch (error) {
   console.error('Erro ao renderizar aplicação:', error);
+  
+  // Fallback para erro crítico
+  const root = document.getElementById('root');
+  if (root) {
+    root.innerHTML = `
+      <div style="padding: 20px; margin: 20px; background: #ffeeee; border: 2px solid red; border-radius: 8px;">
+        <h2>❌ Erro Crítico na Aplicação</h2>
+        <p>Não foi possível inicializar a aplicação React.</p>
+        <details>
+          <summary>Detalhes do erro:</summary>
+          <pre>${error}</pre>
+        </details>
+      </div>
+    `;
+  }
 }
