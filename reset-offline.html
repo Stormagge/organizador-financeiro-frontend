@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reset Offline Mode</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { background: white; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .success { color: #28a745; background: #d4edda; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .info { color: #17a2b8; background: #d1ecf1; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        button { padding: 12px 24px; margin: 10px 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        .danger { background: #dc3545; }
+        .danger:hover { background: #c82333; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Reset Modo Offline - Organizador Financeiro</h1>
+        
+        <div class="info">
+            <strong>Problema:</strong> O frontend está usando modo offline forçado e a URL antiga do Render.<br>
+            <strong>Solução:</strong> Limpar cache e forçar uso da nova API do Railway.
+        </div>
+
+        <h3>🎯 Ações Disponíveis:</h3>
+        
+        <button onclick="resetOfflineMode()">🔄 Resetar Modo Offline</button>
+        <button onclick="clearAllStorage()">🧹 Limpar Todo Cache</button>
+        <button onclick="testNewAPI()">🧪 Testar Nova API</button>
+        <button onclick="showCurrentConfig()" class="danger">📊 Mostrar Config Atual</button>
+
+        <div id="results"></div>
+
+        <h3>📋 URLs:</h3>
+        <pre>
+❌ Antiga (Render): https://organizador-financeiro-backend.onrender.com
+✅ Nova (Railway):  https://organizadorfinanceiro-production.up.railway.app
+        </pre>
+
+        <h3>🚀 Depois de resetar:</h3>
+        <ol>
+            <li>Recarregue a aplicação principal</li>
+            <li>Faça login novamente se necessário</li>
+            <li>Teste se as funções estão funcionando</li>
+            <li>Verifique se não aparece mais "[MODO OFFLINE FORÇADO]"</li>
+        </ol>
+    </div>
+
+    <script>
+        const results = document.getElementById('results');
+        
+        function addResult(message, type = 'success') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            results.appendChild(div);
+        }
+
+        function resetOfflineMode() {
+            try {
+                // Remover flag de modo offline
+                localStorage.removeItem('useOfflineMode');
+                
+                // Forçar API online
+                localStorage.setItem('forceOnlineMode', 'true');
+                
+                addResult('✅ Modo offline resetado! Flag removida do localStorage.', 'success');
+                addResult('✅ Modo online forçado ativado.', 'success');
+                
+            } catch (error) {
+                addResult(`❌ Erro ao resetar: ${error.message}`, 'danger');
+            }
+        }
+
+        function clearAllStorage() {
+            try {
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.includes('offline') || key.includes('organizador') || key.includes('profile'))) {
+                        keysToRemove.push(key);
+                    }
+                }
+                
+                keysToRemove.forEach(key => localStorage.removeItem(key));
+                
+                // Limpar também sessionStorage
+                sessionStorage.clear();
+                
+                addResult(`✅ Cache limpo! ${keysToRemove.length} itens removidos do localStorage.`, 'success');
+                addResult('✅ SessionStorage também limpo.', 'success');
+                
+                // Forçar modo online
+                localStorage.setItem('forceOnlineMode', 'true');
+                addResult('✅ Modo online forçado ativado.', 'success');
+                
+            } catch (error) {
+                addResult(`❌ Erro ao limpar cache: ${error.message}`, 'danger');
+            }
+        }
+
+        async function testNewAPI() {
+            const newURL = 'https://organizadorfinanceiro-production.up.railway.app';
+            
+            try {
+                addResult('🔄 Testando nova API do Railway...', 'info');
+                
+                const response = await fetch(newURL + '/health');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult(`✅ Nova API funcionando! Status: ${data.status}, Environment: ${data.environment}`, 'success');
+                } else {
+                    addResult(`⚠️ API respondeu mas com erro: ${response.status}`, 'danger');
+                }
+                
+            } catch (error) {
+                addResult(`❌ Erro ao testar nova API: ${error.message}`, 'danger');
+            }
+        }
+
+        function showCurrentConfig() {
+            const config = {
+                'useOfflineMode': localStorage.getItem('useOfflineMode'),
+                'forceOnlineMode': localStorage.getItem('forceOnlineMode'),
+                'localStorage_keys': Object.keys(localStorage).filter(k => k.includes('offline') || k.includes('organizador')),
+                'sessionStorage_keys': Object.keys(sessionStorage)
+            };
+            
+            addResult(`📊 Configuração atual: <pre>${JSON.stringify(config, null, 2)}</pre>`, 'info');
+        }
+
+        // Executar teste automático
+        window.onload = function() {
+            addResult('🚀 Ferramenta de reset carregada. Clique nos botões acima para resolver o problema.', 'info');
+        };
+    </script>
+</body>
+</html>
