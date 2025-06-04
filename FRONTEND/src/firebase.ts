@@ -16,8 +16,17 @@ export const useOfflineMode = {
     this.isEnabled = value;
     localStorage.setItem('useOfflineMode', value ? 'true' : 'false');
     console.log(`Modo offline ${value ? 'ativado' : 'desativado'}`);
-  },
-  init() {
+  },  init() {
+    // Verificar se deve forçar modo online
+    const forceOnline = localStorage.getItem('forceOnlineMode');
+    if (forceOnline === 'true') {
+      this.isEnabled = false;
+      localStorage.removeItem('useOfflineMode');
+      localStorage.removeItem('forceOnlineMode');
+      console.log('🔄 MODO ONLINE FORÇADO - Cache resetado');
+      return;
+    }
+    
     // Verificar se estava usando modo offline antes
     const saved = localStorage.getItem('useOfflineMode');
     if (saved === 'true') {

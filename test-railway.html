@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Railway Backend</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Teste Railway Backend</h1>
+    <p><strong>Nova URL:</strong> https://organizadorfinanceiro-production.up.railway.app</p>
+    
+    <button onclick="testHealth()">🏥 Health Check</button>
+    <button onclick="testRoot()">🏠 Root Endpoint</button>
+    <button onclick="testAPIUnauth()">🔐 API (sem auth)</button>
+    <button onclick="clearResults()">🧹 Limpar</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_URL = 'https://organizadorfinanceiro-production.up.railway.app';
+        const results = document.getElementById('results');
+        
+        function addResult(message, isSuccess = true) {
+            const div = document.createElement('div');
+            div.className = `result ${isSuccess ? 'success' : 'error'}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            results.appendChild(div);
+        }
+        
+        function clearResults() {
+            results.innerHTML = '';
+        }
+        
+        async function testHealth() {
+            try {
+                addResult('🔄 Testando /health...', true);
+                const response = await fetch(API_URL + '/health');
+                const data = await response.json();
+                addResult(`✅ Health OK! Status: ${data.status}, Environment: ${data.environment}`, true);
+            } catch (error) {
+                addResult(`❌ Health Error: ${error.message}`, false);
+            }
+        }
+        
+        async function testRoot() {
+            try {
+                addResult('🔄 Testando /...', true);
+                const response = await fetch(API_URL + '/');
+                const data = await response.json();
+                addResult(`✅ Root OK! Message: ${data.message}, Version: ${data.version}`, true);
+            } catch (error) {
+                addResult(`❌ Root Error: ${error.message}`, false);
+            }
+        }
+        
+        async function testAPIUnauth() {
+            try {
+                addResult('🔄 Testando /api/profiles (deve retornar 401)...', true);
+                const response = await fetch(API_URL + '/api/profiles');
+                const data = await response.json();
+                if (response.status === 401) {
+                    addResult(`✅ API Auth funcionando! Status: ${response.status}, Error: ${data.error}`, true);
+                } else {
+                    addResult(`⚠️ API retornou status inesperado: ${response.status}`, false);
+                }
+            } catch (error) {
+                addResult(`❌ API Error: ${error.message}`, false);
+            }
+        }
+        
+        // Teste automático ao carregar
+        window.onload = function() {
+            addResult('🚀 Iniciando testes automáticos...', true);
+            setTimeout(testHealth, 500);
+            setTimeout(testRoot, 1000);
+            setTimeout(testAPIUnauth, 1500);
+        };
+    </script>
+</body>
+</html>
