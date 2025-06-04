@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Backend</title>
+</head>
+<body>
+    <h1>Teste de Conectividade do Backend</h1>
+    <button onclick="testHealth()">Testar Health Check</button>
+    <button onclick="testRoot()">Testar Root</button>
+    <button onclick="testAPI()">Testar API (com token)</button>
+    
+    <div id="results" style="margin-top: 20px; white-space: pre-wrap; font-family: monospace;"></div>
+
+    <script>
+        const API_URL = 'https://organizador-financeiro-backend.onrender.com';
+        const results = document.getElementById('results');
+        
+        function log(message) {
+            results.textContent += new Date().toISOString() + ': ' + message + '\n';
+        }
+        
+        async function testHealth() {
+            log('Testando /health...');
+            try {
+                const response = await fetch(API_URL + '/health');
+                const data = await response.json();
+                log('Health OK: ' + JSON.stringify(data, null, 2));
+            } catch (error) {
+                log('Health ERROR: ' + error.message);
+            }
+        }
+        
+        async function testRoot() {
+            log('Testando /...');
+            try {
+                const response = await fetch(API_URL + '/');
+                const data = await response.json();
+                log('Root OK: ' + JSON.stringify(data, null, 2));
+            } catch (error) {
+                log('Root ERROR: ' + error.message);
+            }
+        }
+        
+        async function testAPI() {
+            log('Testando /api/profiles (sem token - deve dar 401)...');
+            try {
+                const response = await fetch(API_URL + '/api/profiles');
+                const data = await response.json();
+                log('API Response Status: ' + response.status);
+                log('API Response: ' + JSON.stringify(data, null, 2));
+            } catch (error) {
+                log('API ERROR: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
