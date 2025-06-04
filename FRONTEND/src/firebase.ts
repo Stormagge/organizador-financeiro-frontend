@@ -97,7 +97,7 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     console.log('apiFetch: Fazendo requisição para:', fullUrl);
     console.log('apiFetch: Método:', options.method || 'GET');
     console.log('apiFetch: Headers que serão enviados:', {
-      Authorization: `Bearer ${token.substring(0, 20)}...`,
+      Authorization: token ? 'Bearer [REDACTED]' : 'NENHUM',
       'Content-Type': 'application/json'
     });
     
