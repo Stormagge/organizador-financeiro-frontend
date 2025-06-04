@@ -406,6 +406,10 @@ function App() {
   }
 
   const handleAddExpense = async (expense: Expense) => {
+    console.log("App.tsx handleAddExpense: CALLED. Expense object received:", JSON.stringify(expense));
+
+    const defaultCategoryKey = DEFAULT_PERCENTAGES[0]?.key || 'essenciais'; // Failsafe default
+
     try {
       const res = await apiFetch('/api/expenses', {
         method: 'POST',
@@ -414,19 +418,100 @@ function App() {
           profile: currentProfile,
           month: selectedMonth
         })
-      })
-      const newExpense = await res.json()
+      });
+
+      console.log("App.tsx handleAddExpense: Raw response/data from apiFetch:", res);
+
+      let newExpenseData: any; // Use 'any' to handle diverse shapes before validation
+
+      if (res && typeof res.text === 'function' && typeof res.json === 'function') { // Standard Response object
+        console.log("App.tsx handleAddExpense: Processing as standard Response object.");
+        console.log("App.tsx handleAddExpense: res status", res.status);
+        console.log("App.tsx handleAddExpense: res ok", res.ok);
+
+        if (!res.ok) {
+          let errorResponseMessage = `API error ${res.status}`;
+          try {
+            const errorData = await res.json();
+            errorResponseMessage = errorData.message || errorResponseMessage;
+          } catch (e) {
+            const errorText = await res.text();
+            console.error("App.tsx handleAddExpense: Could not parse error JSON from API, error text:", errorText, e);
+            errorResponseMessage = errorText || errorResponseMessage;
+          }
+          console.error("App.tsx handleAddExpense: API error response", res.status, errorResponseMessage);
+          throw new Error(errorResponseMessage);
+        }
+
+        const responseText = await res.text();
+        console.log("App.tsx handleAddExpense: responseText from API", responseText);
+        if (!responseText) {
+            console.error("App.tsx handleAddExpense: API returned empty response text. Using fallback logic.");
+            newExpenseData = undefined; // Force fallback to original expense
+        } else {
+            try {
+                newExpenseData = JSON.parse(responseText);
+            } catch (e) {
+                console.error("App.tsx handleAddExpense: Failed to parse responseText from API", e, responseText);
+                throw new Error("Failed to parse expense data from API.");
+            }
+        }
+      } else { // Assumed to be direct data (e.g., from offlineAPI)
+        console.log("App.tsx handleAddExpense: Processing as direct data object.", JSON.stringify(res));
+        newExpenseData = res;
+      }
+      
+      console.log("App.tsx handleAddExpense: newExpenseData after initial processing:", JSON.stringify(newExpenseData));
+
+      // Validate and sanitize newExpenseData
+      if (typeof newExpenseData !== 'object' || newExpenseData === null) {
+        console.error("App.tsx handleAddExpense: newExpenseData is not an object or is null. Using fallback (original expense from form). Original expense:", JSON.stringify(expense));
+        const fallbackExpense = { ...expense };
+        if (typeof fallbackExpense.category === 'undefined' || !DEFAULT_PERCENTAGES.some(c => c.key === fallbackExpense.category)) {
+          console.warn(`App.tsx handleAddExpense (fallback validation): Original expense category '${fallbackExpense.category}' is invalid or undefined. Setting to default: '${defaultCategoryKey}'.`);
+          fallbackExpense.category = defaultCategoryKey;
+        }
+        setExpenses(prev => ({
+          ...prev,
+          [`${currentProfile}_${selectedMonth}`]: [...(prev[`${currentProfile}_${selectedMonth}`] || []), fallbackExpense] 
+        }));
+        return; 
+      }
+      
+      // Ensure the new/returned expense data has a valid category.
+      if (typeof newExpenseData.category === 'undefined' || !DEFAULT_PERCENTAGES.some(c => c.key === newExpenseData.category)) {
+        console.warn(`App.tsx handleAddExpense: newExpenseData.category '${newExpenseData.category}' is invalid or undefined. Attempting to use original form expense category ('${expense.category}') or default ('${defaultCategoryKey}').`);
+        newExpenseData.category = (expense.category && DEFAULT_PERCENTAGES.some(c => c.key === expense.category)) ? expense.category : defaultCategoryKey;
+        console.log(`App.tsx handleAddExpense: newExpenseData.category ultimately set to '${newExpenseData.category}'.`);
+      }
+
+      // Ensure other critical fields are present from the API response, or use original expense values as fallback.
+      newExpenseData.value = newExpenseData.value ?? expense.value;
+      newExpenseData.date = newExpenseData.date ?? expense.date;
+      newExpenseData.description = newExpenseData.description ?? expense.description;
+      // id should ideally come from the backend/offlineAPI. recurring is also important.
+      // If newExpenseData is from an API, it should have an id. If it's from offlineAPI, it also generates an id.
+
+      console.log("App.tsx handleAddExpense: Final newExpenseData before setExpenses:", JSON.stringify(newExpenseData));
+
       setExpenses(prev => ({
         ...prev,
-        [`${currentProfile}_${selectedMonth}`]: [...(prev[`${currentProfile}_${selectedMonth}`] || []), newExpense]
-      }))
+        [`${currentProfile}_${selectedMonth}`]: [...(prev[`${currentProfile}_${selectedMonth}`] || []), newExpenseData as Expense]
+      }));
+
     } catch (err) {
-      console.error('Erro ao adicionar despesa:', err)
-      // Fallback: adiciona localmente
+      console.error('App.tsx handleAddExpense: Error during expense addition (outer catch):', err);
+      
+      const fallbackExpense = { ...expense }; 
+      if (typeof fallbackExpense.category === 'undefined' || !DEFAULT_PERCENTAGES.some(c => c.key === fallbackExpense.category)) {
+        console.warn(`App.tsx handleAddExpense (outer catch): Fallback expense category '${fallbackExpense.category}' is invalid or undefined. Setting to default: '${defaultCategoryKey}'.`);
+        fallbackExpense.category = defaultCategoryKey;
+      }
+      console.log("App.tsx handleAddExpense (outer catch): Using fallback (original expense from form):", JSON.stringify(fallbackExpense));
       setExpenses(prev => ({
         ...prev,
-        [`${currentProfile}_${selectedMonth}`]: [...(prev[`${currentProfile}_${selectedMonth}`] || []), expense]
-      }))
+        [`${currentProfile}_${selectedMonth}`]: [...(prev[`${currentProfile}_${selectedMonth}`] || []), fallbackExpense]
+      }));
     }
   }
 
